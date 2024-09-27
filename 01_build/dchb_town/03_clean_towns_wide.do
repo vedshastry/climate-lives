@@ -247,16 +247,20 @@
 
     *** Note: 2001 and 2011 data are from the census website, hence no additional cleaning
 
-
     *-------------------------------------------------------------------------------
-    * Aggregate: agricultural and non agricultural work
+    * Compute worker totals and aggregate agricultural/non agricultural workers
     *-------------------------------------------------------------------------------
 
     forval year = 1961(10)2011 {
     foreach     type in t m f {
 
-        egen        `type'_agwrk_`year'      =   rowtotal(`type'_clwrk_`year' `type'_alwrk_`year') , m
-        egen        `type'_nonagwrk_`year'   =   rowtotal(`type'_hhwrk_`year' `type'_otwrk_`year' `type'_marwrk_`year') , m
+        * Total workers include marginal workers
+        replace     `type'_wrk_`year'        =   `type'_wrk_`year' + `type'_marwrk_`year' ///
+                                            if    !mi(`type'_marwrk_`year')
+
+        * Agricultural and non agricultural workers
+        egen        `type'_agwrk_`year'      =   rowtotal(`type'_clwrk_`year' `type'_alwrk_`year' `type'_marwrk_`year') , m
+        egen        `type'_nonagwrk_`year'   =   rowtotal(`type'_hhwrk_`year' `type'_otwrk_`year')
 
     }
     }
@@ -287,6 +291,57 @@
                     if _rc {
                         di "failed"
                     }
+
+    /* end var loop */
+    }
+    /* end type loop */
+    }
+    /* end year loop */
+    }
+
+    *-------------------------------------------------------------------------------
+    * Generate share of working population
+    *-------------------------------------------------------------------------------
+
+    forval      year    = 1961(10)2011 {
+    foreach     type    in t m f {
+    foreach     var     in      clwrk alwrk hhwrk otwrk ///
+                                agwrk nonagwrk {
+
+                * Calculate % of town population
+                gen     shr_`type'_`var'_`year' = `type'_`var'_`year' / `type'_wrk_`year'
+                lab var shr_`type'_`var'_`year' "share `type' `var' `year'"
+
+                * check shr is within 0,1
+                qui sum     shr_`type'_`var'_`year'
+                cap assert  r(max) <= 1
+                    if _rc {
+                        replace shr_`type'_`var'_`year' = .f if shr_`type'_`var'_`year' > 1 & !mi(shr_`type'_`var'_`year')
+                    }
+                qui sum     shr_`type'_`var'_`year'
+                cap assert  r(max) <= 1
+                    if _rc {
+                        di "failed"
+                    }
+
+    /* end var loop */
+    }
+    /* end type loop */
+    }
+    /* end year loop */
+    }
+
+    *-------------------------------------------------------------------------------
+    * Generate log variables
+    *-------------------------------------------------------------------------------
+
+    forval      year    = 1961(10)2011 {
+    foreach     type    in t m f {
+    foreach     var     in pop sc st lit wrk nonwrk {
+
+            * Log transformation
+            gen         log_`type'_`var'_`year' = log(`type'_`var'_`year')
+            lab var     log_`type'_`var'_`year' "Log `type' `var' `year'"
 
     /* end var loop */
     }

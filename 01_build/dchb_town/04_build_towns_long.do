@@ -46,7 +46,14 @@
                 pct_t_otwrk pct_m_otwrk pct_f_otwrk ///
                 pct_t_agwrk pct_t_nonagwrk ///
                 pct_m_agwrk pct_m_nonagwrk ///
-                pct_f_agwrk pct_f_nonagwrk
+                pct_f_agwrk pct_f_nonagwrk ///
+                shr_t_clwrk shr_m_clwrk shr_f_clwrk ///
+                shr_t_alwrk shr_m_alwrk shr_f_alwrk ///
+                shr_t_hhwrk shr_m_hhwrk shr_f_hhwrk ///
+                shr_t_otwrk shr_m_otwrk shr_f_otwrk ///
+                shr_t_agwrk shr_t_nonagwrk ///
+                shr_m_agwrk shr_m_nonagwrk ///
+                shr_f_agwrk shr_f_nonagwrk
 
     local       oth_vars ///
                 exist status
@@ -105,42 +112,20 @@
         gen         log_area = log(area)
         lab var     log_area "Log area"
 
-    foreach var in pop sc st lit wrk nonwrk marwrk {
+        foreach var in pop pdensity sc st lit wrk nonwrk marwrk {
 
-        gen         log_t_`var' = log(t_`var')
-        gen         log_m_`var' = log(m_`var')
-        gen         log_f_`var' = log(f_`var')
+            gen         log_t_`var' = log(t_`var')
+            gen         log_m_`var' = log(m_`var')
+            gen         log_f_`var' = log(f_`var')
 
-        lab var     log_t_`var' "Log t `var'"
-        lab var     log_m_`var' "Log m `var'"
-        lab var     log_f_`var' "Log f `var'"
+            lab var     log_t_`var' "Log t `var'"
+            lab var     log_m_`var' "Log m `var'"
+            lab var     log_f_`var' "Log f `var'"
 
-    }
+        }
 
-    * Percentage variables
-    // foreach var in pop sc st lit wrk nonwrk marwrk agwrk nonagwrk {
-    //
-    //     gen         pct_t_`var' = t_`var' / t_pop
-    //     gen         pct_m_`var' = m_`var' / t_pop
-    //     gen         pct_f_`var' = f_`var' / t_pop
-    //
-    //     lab var     pct_t_`var' "Pct t `var'"
-    //     lab var     pct_m_`var' "Pct m `var'"
-    //     lab var     pct_f_`var' "Pct f `var'"
-    //
-    // }
-    //
-    foreach gen in t m f {
-        gen         pct_`gen'_cagwrk = `gen'_agwrk / t_wrk
-        gen         pct_`gen'_cnonagwrk = `gen'_nonagwrk / t_wrk
-
-        lab var     pct_`gen'_cagwrk "Pct `gen' agwrk / t_wrk"
-        lab var     pct_`gen'_cnonagwrk "Pct `gen' nonagwrk / t_wrk"
-    }
-
-        * Format vars
-        format log_* %9.3f
-        format pct_* %9.3f
+    * Format vars
+    format log_* pct_* shr_* %9.3f
 
 
     * Reorder
@@ -223,18 +208,21 @@
 
     lab var     pct_t_agwrk "Pct ag workers / population"
     lab var     pct_t_nonagwrk "Pct non ag workers / population"
-    lab var     pct_t_cagwrk "Pct ag workers / all workers"
-    lab var     pct_t_cnonagwrk "Pct non ag workers / all workers"
 
     lab var     pct_m_agwrk "Pct ag workers / population, male"
     lab var     pct_m_nonagwrk "Pct non ag workers / population, male"
-    lab var     pct_m_cagwrk "Pct ag workers / all workers, male"
-    lab var     pct_m_cnonagwrk "Pct non ag workers / all workers, male"
 
     lab var     pct_f_agwrk "Pct ag workers / population, female"
     lab var     pct_f_nonagwrk "Pct non ag workers / population, female"
-    lab var     pct_f_cagwrk "Pct ag workers / all workers, female"
-    lab var     pct_f_cnonagwrk "Pct non ag workers / all workers, female"
+
+    lab var     shr_t_agwrk "Share ag workers / workers"
+    lab var     shr_t_nonagwrk "Share non ag workers / workers"
+
+    lab var     shr_m_agwrk "Share ag workers / workers, male"
+    lab var     shr_m_nonagwrk "Share non ag workers / workers, male"
+
+    lab var     shr_f_agwrk "Share ag workers / workers, female"
+    lab var     shr_f_nonagwrk "Share non ag workers / workers, female"
 
     lab var     enter_dec "Town birth/entry decade"
     lab var     exit_dec "Town death/exit decade"
