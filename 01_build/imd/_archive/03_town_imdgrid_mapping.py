@@ -15,7 +15,8 @@ from tqdm import tqdm
 ################################################################################
 
 # 1 - Read IMD gridpoints as geodataframe
-csv_path = '/home/ved/dropbox/climate-lives/data/build/input/imd/imd_1951_2023.csv'
+# csv_path = '/home/ved/dropbox/climate-lives/data/build/input/imd/imd_1951_2023.csv'
+csv_path = '/home/ved/dropbox/climate-lives/data/build/input/imd/imd_1951_2023_annual.csv'
 imd_data = pd.read_csv(csv_path)
 
 geometry = [Point(xy) for xy in zip(imd_data['lon'], imd_data['lat'])]
@@ -33,8 +34,6 @@ town_shapefile_path = '/home/ved/dropbox/climate-lives/gis/input/cen11_towns/Tow
 towns_gdf = gpd.read_file(town_shapefile_path) # Load town boundaries
 
 # 2b - Read districts geodataframe
-
-
 
 # 3 - Define function to map polygon to nearest grid point
 def polygon_gridpoint_mapping(gridpoint_gdf, boundary_gdf):
@@ -55,5 +54,5 @@ def polygon_gridpoint_mapping(gridpoint_gdf, boundary_gdf):
 
 
 result = polygon_gridpoint_mapping(imd_gdf, towns_gdf).reset_index()[['CODE_2011', 'lat', 'lon']]
-export_dir = '/home/ved/dropbox/climate-lives/data/build/temp'
+export_dir = '/home/ved/dropbox/climate-lives/data/build/input/imd'
 result.to_csv(os.path.join(export_dir, 'town_imdgrid_mapping.csv'), index=False)

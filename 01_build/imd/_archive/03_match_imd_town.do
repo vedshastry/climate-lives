@@ -5,14 +5,17 @@
 * 1. import imd-town mapping
 *--------------------------------
 
-    import delimited "$b_temp/town_imdgrid_mapping.csv" , clear stringcols(1)
+    import delimited "$b_input/imd/town_imdgrid_mapping.csv" , clear stringcols(1)
 
     * clean up
     count // 8050 obs
     rename  * , lower
     /*
-    some code_2011 can be duplicated because of town size
+    * some code_2011 can be duplicated because of town size
+
     duplicates tag    code_2011 , gen(tag)
+    tab tag
+
         tag |      Freq.     Percent        Cum.
         ------------+-----------------------------------
           0 |      7,987       99.22       99.22
@@ -37,7 +40,7 @@
 * Prepare lat/lon list
 *--------------------------------
 
-    import delimited "$b_input/imd/all_years_combined.csv" , clear
+    import delimited "$b_input/imd/imd_1951_2023_annual.csv" , clear
 
     * 1. prepare lat/lon level observations
     keep lat lon
@@ -52,10 +55,10 @@
 
     compress
     cap mkdir "$b_output/imd"
-    save "$b_temp/imd/imd_latlon_level.dta" , replace
+    save "$b_input/imd/imd_latlon_level.dta" , replace
 
 *--------------------------------
-* Build mappingn between town pca and gridpoints within 100 km
+* Build mapping between town pca and gridpoints within 100 km
 *--------------------------------
 
     use "$b_output/dchb_town/03_clean_towns_wide.dta" , clear
@@ -66,7 +69,7 @@
     isid    id_town
 
     * form dchb_town/grid pairs
-    cross using "$b_temp/imd/imd_latlon_level.dta"
+    cross using "$b_input/imd/imd_latlon_level.dta"
 
         * Calculate distance
         geodist     y x lat lon , gen(km_to_grid)
