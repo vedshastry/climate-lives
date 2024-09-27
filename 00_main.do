@@ -87,28 +87,40 @@ global nic_prices       "$dropbox/retail_price_data"
 *-------------------------------------------------------------------------------
 
 * Toggles
-local   00_RAW_DATA 0
-local   DCHB_TOWN 0
 local   IMD 0
+local   DCHB_TOWN 0
+local   REG_OUTPUT 0
 
 
-    * Prepare raw data
-    if `00_RAW_DATA' == 1 {
-        // 01_get_imd_data.py
-        // 02_build_imd_data.py
-        // 03_town_imdgrid_mapping.py
-        // 04_match_imd_town.do
-        // 05_match_imd_agriwage.do
-        // 05_prep_imd_vars.do
+    * Prepare IMD data
+    if `IMD' == 1 {
+
+        * IMD temperature and rainfall
+            // Python scripts to pull data
+            // "$clives_code/build/imd/01_get_imd_data.py"
+            // "$clives_code/build/imd/02_build_imd_data_daily.py"
+
+        do "$clives_code/01_build/imd/03_prep_imd_data_daily.do"
+        do "$clives_code/01_build/imd/04_build_imd_decadal.do"
+        do "$clives_code/01_build/imd/05_map_imd_grid_towns.do"
     }
 
     * Census data
     if `DCHB_TOWN' == 1 {
 
-        do "$clives_code/build/dchb_town/00_shp2dta_census_towns.do"
-        do "$clives_code/build/dchb_town/01_import_census_towns.do"
-        do "$clives_code/build/dchb_town/02_prep_census_towns.do"
-        do "$clives_code/build/dchb_town/03_clean_towns_wide.do"
-        do "$clives_code/build/dchb_town/04_build_towns_long.do"
+        do "$clives_code/01_build/dchb_town/00_shp2dta_census_towns.do"
+        do "$clives_code/01_build/dchb_town/01_import_census_towns.do"
+        do "$clives_code/01_build/dchb_town/02_prep_census_towns.do"
+        do "$clives_code/01_build/dchb_town/03_clean_towns_wide.do"
+        do "$clives_code/01_build/dchb_town/04_build_towns_long.do"
+
+    }
+
+    * Regression output
+    if `REG_OUTPUT' == 1 {
+
+        do "$clives_code/02_analysis/00_prep_towns_temperature.do"
+        do "$clives_code/02_analysis/01_reghdfe_towns_temp.do"
+        do "$clives_code/02_analysis/plot1_reg_pct_wrk_tbar_mean.do"
 
     }

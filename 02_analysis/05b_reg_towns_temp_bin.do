@@ -10,7 +10,7 @@
     *---------------------------------------------------------------------------
 
         * use analysis data
-        use "$a_clean/00_prep_towns_temperature.dta" , clear
+        use "$a_input/00_prep_towns_temperature.dta" , clear
 
         * Reshape to wide format
             local reshapevars pct_t_wrk pct_t_agwrk pct_t_nonagwrk tbar_mean tbar_min tbar_max rain_mean

@@ -5,7 +5,7 @@
 * regression estimates
 
     * use analysis data
-    // use "$a_clean/00_prep_towns_temperature.dta" , clear
+    // use "$a_input/00_prep_towns_temperature.dta" , clear
 
         * keep towns that exist from a particular year
         // bys id_town (census_dec) : gen etag = (exist == 1 & census_dec == 1961)
@@ -22,7 +22,7 @@
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"
@@ -51,8 +51,8 @@
                 sum pct_`sex'_`yvar' if e(sample)
                 estadd scalar Mean = r(mean) // store mean
 
-                cap mkdir "$a_final/estimates/binned/"
-                estwrite `sex'_`yvar'_`stat' using "$a_final/estimates/binned/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
+                cap mkdir "$a_output/estimates/binned/"
+                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/binned/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
 
         /* end yvar loop */
         }
@@ -140,7 +140,7 @@ foreach sex in t m f {
             vertical
              recast(connected)
 
-        graph export "$a_final/figures/coefplot_`sex'_`stat'.png", replace
+        graph export "$a_output/figures/coefplot_`sex'_`stat'.png", replace
     }
 }
 
@@ -159,7 +159,7 @@ foreach sex in t m f {
         * Rabi = Dec-May. sowing = Dec-Feb. harvest = Apr-May
     */
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         local fe_vars id_town census_dec
 
@@ -184,7 +184,7 @@ foreach sex in t m f {
                         reghdfe pct_`sex'_`yvar' c.t`ssn'`mon'_`stat' c.p`ssn'`mon'_`stat' ///
                         , absorb(`fe_vars') vce(cluster id_town) nocons
 
-                estwrite `sex'_`yvar'_`ssn'`mon'_`stat' using "$a_final/estimates/`sex'_`yvar'_`ssn'`mon'_`stat'" , id(pid) replace reproducible
+                estwrite `sex'_`yvar'_`ssn'`mon'_`stat' using "$a_output/estimates/`sex'_`yvar'_`ssn'`mon'_`stat'" , id(pid) replace reproducible
 
             }
 
@@ -201,7 +201,7 @@ foreach sex in t m f {
 
     *** Export tables
 
-        use "$a_clean/00_prep_towns_temperature.dta" , clear
+        use "$a_input/00_prep_towns_temperature.dta" , clear
 
         * Labels
         lab var tkharall_mean "Decadal kharif temp. (C)"
@@ -231,7 +231,7 @@ foreach sex in t m f {
 
             foreach yvar in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
-                estread `sex'_`yvar'_`ssn'`mon'_`stat' using "$a_final/estimates/`sex'_`yvar'_`ssn'`mon'_`stat'" , id(pid)
+                estread `sex'_`yvar'_`ssn'`mon'_`stat' using "$a_output/estimates/`sex'_`yvar'_`ssn'`mon'_`stat'" , id(pid)
 
                 * sum pct_`sex'_`yvar' if _est_`sex'_`yvar'_`ssn'`mon'_`stat' == 1
                 * estadd scalar Mean = r(mean) // Store mean
@@ -264,7 +264,7 @@ foreach sex in t m f {
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"

@@ -3,7 +3,7 @@
 *-------------------------------------------------------------------------------
 
 * Load the dataset
-use "$a_clean/00_prep_towns_temperature.dta", clear
+use "$a_input/00_prep_towns_temperature.dta", clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var rain_mean "Decadal mean rain (mm)"

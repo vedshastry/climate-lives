@@ -2,16 +2,17 @@
 * prepare towns and temperature data
 *-------------------------------------------------------------------------------
 
-do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
+// do "$climate_lives/code/01_build/dchb_town/04_build_towns_long.do"
 
 * import imd-town mapping
 
-    use "$b_output/imd/04_town_imd_grid_100km.dta" , clear
+    // use "$b_output/imd/04_town_imd_grid_100km.dta" , clear
+    use "$b_output/imd/05_map_imd_grid_towns.dta" , clear
 
     isid    id_town id_xy
 
     * 1. merge IMD data
-    joinby  id_xy using "$b_input/imd/05_prep_imd_vars_decadal.dta"
+    joinby  id_xy using "$b_input/imd/04_build_imd_decadal.dta"
 
         * sanity check
         isid    id_town census_dec id_xy
@@ -20,7 +21,8 @@ do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
         * store list of vars
         unab    climate_vars : ///
                 rain_* tbar_* tmin_* tmax_* ///
-                ?khar* ?rabi*
+                ?khar* ?rabi* ///
+                ?lst*
 
         * adjust var by weight
         foreach var in `climate_vars' {
@@ -30,17 +32,15 @@ do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
         * sum up the adjusted pieces
         collapse    (sum) adj_* ///
                     (mean) rain_* tbar_* tmin_* tmax_* ///
-                    (max) b??_* ///
+                    ?khar* ?rabi* ?lst_* ///
                     , by(id_town census_dec)
 
             * drop/format
             rename  (*_mean *_min *_max) (raw_*_mean raw_*_min raw_*_max)
             rename  raw_adj_* adj_*
             rename  adj_* *
-            rename  raw_b??_* b??_*
 
             format *_mean *_min *_max %9.1f
-            format b??_* %5.0g
 
         * sanity check
         isid        id_town census_dec
@@ -59,26 +59,12 @@ do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
     ** Sanity check
     sort    id_town census_dec
     isid    id_town census_dec
+    xtset   id_town census_dec
 
         egen    pid = group(id_town census_dec)
         isid    pid
 
     *-------------------------------------------------------------------------------
-
-    * Temperature mins
-    foreach stat in min mean max {
-        egen    bin_tbar_`stat' = cut(tbar_`stat'), at(18(2)32) icodes
-        lab var bin_tbar_`stat' "tbar_`stat' bins 18(2)32"
-    }
-
-    // gen     lb_tbar_mean = 0 if mi(bin_tbar_mean)
-    // replace lb_tbar_mean = (bin_tbar_mean + 16)     if !mi(bin_tbar_mean)
-    //
-    // gen     ub_tbar_mean = 32 if bin_tbar_mean == 32
-    // replace ub_tbar_mean = (bin_tbar_mean * 2) + 16 if !mi(bin_tbar_mean)
-    //
-    // order tbar_mean bin_tbar_mean
-    // lb_tbar_mean ub_tbar_mean
 
     * fill state/district codes
     gen     stcode = scode if census_dec == 2011
@@ -87,25 +73,32 @@ do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
     bys     id_town (census_dec) : replace  stcode = stcode[_N]
     bys     id_town (census_dec) : replace  dtcode = dtcode[_N]
 
+        * Number of years town exists in panel
+        bys id_town (census_dec) : egen    years_exist = sum(exist)
+
         * Stateyear FE
         egen    styear = group(stcode census_dec)
-        lab var styear "Stateyear FE"
+        // egen    styear = group(sname census_dec)
+
+        * Districtyear FE
+        egen    dtyear = group(dtcode census_dec)
+        // egen    dtyear = group(sname dname census_dec)
 
     * Clean up
     order   rain* tbar_* tmin_* tmax_* , after(t_nonagwrk)
 
     * Labels
     foreach var of varlist *_mean *_min *_max {
-        lab var `var' "10y grid weighted mean `var'"
+        lab var `var' "Decade avg. `var'"
     }
     foreach var of varlist raw_* {
-        lab var `var' "10y mean `var'"
+        lab var `var' "Decade avg. `var'"
     }
     foreach var of varlist *khar*  {
-        lab var `var' "10y mean `var' - kharif"
+        lab var `var' "Decade avg. `var' - kharif"
     }
     foreach var of varlist *rabi*  {
-        lab var `var' "10y mean `var' - kharif"
+        lab var `var' "Decade avg. `var' - kharif"
     }
     foreach var of varlist *sow*  {
         local label : variable label `var'
@@ -118,4 +111,4 @@ do "$climate_lives/code/build/dchb_town/04_build_towns_long.do"
 
     * save
     compress
-    save "$a_clean/00_prep_towns_temperature.dta" , replace
+    save "$a_input/00_prep_towns_temperature.dta" , replace

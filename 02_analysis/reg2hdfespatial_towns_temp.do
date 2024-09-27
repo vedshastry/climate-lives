@@ -5,7 +5,7 @@
 * regression estimates
 
     * use analysis data
-    // use "$a_clean/00_prep_towns_temperature.dta" , clear
+    // use "$a_input/00_prep_towns_temperature.dta" , clear
 
         // local   fe_vars "styear"
         local   fe_vars ""
@@ -14,7 +14,7 @@
     * 0. Reg workers by category
     *---------------------------------------------------------------------------
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"
@@ -141,7 +141,7 @@
     * 1. Reg employment on temperature (ag and non ag)
     *---------------------------------------------------------------------------
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"
@@ -262,7 +262,7 @@
     * . Reg employment on seasonal temperature
     *---------------------------------------------------------------------------
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         lab var tkharall_mean "Decadal kharif temp. (C)"
         lab var tkharsow_mean " Decadal kharif sowing temp. (C)"
@@ -362,7 +362,7 @@
     * 2. Reg demographics on temperature
     *---------------------------------------------------------------------------
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
         est clear
 
@@ -482,7 +482,7 @@
     * 3. Reg population on temperature
     *---------------------------------------------------------------------------
 
-    use "$a_clean/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_temperature.dta" , clear
 
     est clear
 

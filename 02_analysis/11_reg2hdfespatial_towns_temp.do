@@ -12,6 +12,7 @@
         // bys id_town (census_dec) : egen ktag = max(etag)
         // keep if ktag == 1
 
+    cap mkdir "$a_output/estimates"
 
     ****************************************************************************
     *** Reg workers by category
@@ -29,10 +30,19 @@
         lab var tbar_max "Decadal max temp. (C)"
         lab var rain_mean "Decadal mean rain (mm)"
 
-        gen tbar_mean_sq = tbar_mean^2
-        lab var tbar_mean_sq "Decadal mean temp. squared (C)"
+        * generate dummy for each ID
+        // id_town, census_dec already covered in panelvar and timevar
+        local calc_fe_vars  styear
 
-        local fe_vars id_town census_dec styear
+        qui foreach var of varlist `calc_fe_vars' {
+            nois di "Generating dummies for `var'"
+            levelsof `var' // iterate over values of variable
+            foreach i in `r(levels)' {
+                gen     _I`var'_`i' = (`var' == `i')
+            }
+        }
+
+        local fe_vars _I*
 
         est clear // clear estimates
 
@@ -42,23 +52,32 @@
         * worker categories
         qui {
         foreach sex in t m f {
-        foreach stat in mean {
+        foreach stat in mean min max {
         foreach yvar in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
         nois di "calculating: `sex'_`yvar'_`stat'"
 
-                eststo  `sex'_`yvar'_`stat' : ///
-                        reghdfe pct_`sex'_`yvar' c.tbar_`stat' c.tbar_`stat'_sq c.rain_mean ///
-                        , absorb(`fe_vars') vce(cluster id_town) nocons
+                eststo  `sex'_`yvar'_`stat' : reg2hdfespatial pct_`sex'_`yvar' c.tbar_`stat' c.rain_mean `fe_vars' ///
+                                    , timevar(census_dec) panelvar(id_town) ///
+                                    lat(y) lon(x) distcutoff(100) lagcutoff(3)
 
                 sum pct_`sex'_`yvar' if e(sample)
                 estadd scalar Mean = r(mean) // store mean
 
-                cap mkdir "$a_output/estimates/binned/"
-                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/binned/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
+                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/reg2hfespatial_`sex'_`yvar'_`stat'" , id(pid) replace reproducible
 
         /* end yvar loop */
         }
+
+            * Table: total workers on mean temp.
+            esttab `sex'_*_`stat' using "${tex_dir}/tables/reg2hdfespatial_`sex'_workers_category_temperature_`stat'.tex", ///
+                mtitles("Nonworkers" "Workers" "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
+                keep(*tbar* *rain*) ///
+                b(%9.3f) se(%9.3f) star label booktabs replace ///
+                stats(Mean N, fmt(%9.3f %9.0g) labels("Mean" "N")) ///
+                starlevels(* 0.10 ** 0.05 *** 0.01) ///
+                note("Standard errors in parentheses.")
+
         /* end stat loop */
         }
         /* end sex loop */
@@ -69,27 +88,42 @@
 
     *** Export tables
 
-    foreach sex in t m f {
-        foreach stat in mean {
+    /*
+    use "$a_input/00_prep_towns_temperature.dta" , clear
+        foreach sex in t m f {
+        foreach stat in mean min max {
+        foreach yvar in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
-            * Table: workers on temperature (quadratic form)
-            esttab `sex'_*_`stat' using "${tex_dir}/tables/quadratic_reg_`sex'_workers_category_temperature_`stat'.tex", ///
+            estread     "$a_output/estimates/reg2hfespatial_`sex'_`yvar'_`stat'" , id(pid)
+
+        /* end yvar loop */
+        }
+        /* end stat loop */
+        }
+        /* end sex loop */
+        }
+
+
+        foreach sex in t m f {
+        foreach stat in mean min max {
+
+            * Table: total workers on mean temp.
+            esttab `sex'_*_`stat' using "${tex_dir}/tables/reg2hdfespatial_`sex'_workers_category_temperature_`stat'.tex", ///
                 mtitles("Nonworkers" "Workers" "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
+                keep(*tbar* *rain*) ///
                 b(%9.3f) se(%9.3f) star label booktabs replace ///
-                keep(tbar_`stat' tbar_`stat'_sq rain_mean) ///
-                order(tbar_`stat' tbar_`stat'_sq rain_mean) ///
-                coeflabels(tbar_`stat' "Temperature" tbar_`stat'_sq "Temperature\textsuperscript{2}" rain_mean "Rainfall") ///
                 stats(Mean N, fmt(%9.3f %9.0g) labels("Mean" "N")) ///
                 starlevels(* 0.10 ** 0.05 *** 0.01) ///
-                note("Standard errors in parentheses. Temperature coefficients multiplied by 100 for readability.")
+                note("Standard errors in parentheses.")
 
         /* end stat loop */
         }
-    /* end sex loop */
-    }
-
+        /* end sex loop */
+        }
+    */
 
 /*
+
     ****************************************************************************
     *** Reg workers per category on 'seasonal' temperature
     ****************************************************************************
