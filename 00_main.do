@@ -20,14 +20,14 @@ if "`c(username)'" == "ved" {
 
 * Project folders
 
-global climate_lives     "$dropbox/climate-lives"
+global dchb_climate     "$dropbox/dchb-climate"
 global dchb             "$dropbox/dchb"
 
 global nic_prices       "$dropbox/retail_price_data"
 
     * LaTeX project:
     // global tex_dir          "$overleaf/Climate impacts on agriculture in India"
-    global tex_dir          "$climate_lives/tex"
+    global tex_dir          "$dchb_climate/tex"
 
                 cap mkdir   "${tex_dir}/figures"
                 cap mkdir   "${tex_dir}/tables"
@@ -35,21 +35,21 @@ global nic_prices       "$dropbox/retail_price_data"
 * Subfolders
 
     * -> /code
-    global      clives_code        "$climate_lives/code"
-                global  b_code          "$clives_code/build"
-                global  a_code          "$clives_code/analysis"
+    global      dchb_climate_code        "$dchb_climate/code"
+                global  b_code          "$dchb_climate_code/build"
+                global  a_code          "$dchb_climate_code/analysis"
 
     * -> /data
-    global      clives_data        "$climate_lives/data"
+    global      dchb_climate_data        "$dchb_climate/data"
 
-        global      dt_raw          "$clives_data/raw"
+        global      dt_raw          "$dchb_climate_data/raw"
 
-        global      dt_build        "$clives_data/build"
+        global      dt_build        "$dchb_climate_data/build"
                 global  b_input         "$dt_build/input"
                 global  b_output        "$dt_build/output"
                 global  b_temp          "$dt_build/temp"
 
-        global      dt_analysis     "$clives_data/analysis"
+        global      dt_analysis     "$dchb_climate_data/analysis"
                 global  a_input        "$dt_analysis/input"
                 global  a_output       "$dt_analysis/output"
                 global  a_temp         "$dt_analysis/temp"
@@ -62,9 +62,9 @@ global nic_prices       "$dropbox/retail_price_data"
             }
 
     * -> /gis
-    global      clives_gis        "$climate_lives/gis"
-                global  gis_input         "$clives_gis/input"
-                global  gis_output        "$clives_gis/output"
+    global      dchb_climate_gis        "$dchb_climate/gis"
+                global  gis_input         "$dchb_climate_gis/input"
+                global  gis_output        "$dchb_climate_gis/output"
 
 *-------------------------------------------------------------------------------
 *== Package dependencies
@@ -79,7 +79,7 @@ global nic_prices       "$dropbox/retail_price_data"
        }
    }
 
-   adopath ++ "$climate_lives/code/99_ado"
+   adopath ++ "$dchb_climate/code/99_ado"
 
 
 *-------------------------------------------------------------------------------
@@ -97,30 +97,31 @@ local   REG_OUTPUT 0
 
         * IMD temperature and rainfall
             // Python scripts to pull data
-            // "$clives_code/build/imd/01_get_imd_data.py"
-            // "$clives_code/build/imd/02_build_imd_data_daily.py"
+            // "$dchb_climate_code/build/imd/01_get_imd_data.py"
+            // "$dchb_climate_code/build/imd/02_build_imd_data_daily.py"
 
-        do "$clives_code/01_build/imd/03_prep_imd_data_daily.do"
-        do "$clives_code/01_build/imd/04_build_imd_decadal.do"
-        do "$clives_code/01_build/imd/05_map_imd_grid_towns.do"
+        do "$dchb_climate_code/01_build/imd/03_prep_imd_data_daily.do"
+        do "$dchb_climate_code/01_build/imd/04_build_imd_decadal.do"
+        do "$dchb_climate_code/01_build/imd/05_map_imd_grid_towns.do"
     }
 
     * Census data
     if `DCHB_TOWN' == 1 {
 
-        do "$clives_code/01_build/dchb_town/00_shp2dta_census_towns.do"
-        do "$clives_code/01_build/dchb_town/01_import_census_towns.do"
-        do "$clives_code/01_build/dchb_town/02_prep_census_towns.do"
-        do "$clives_code/01_build/dchb_town/03_clean_towns_wide.do"
-        do "$clives_code/01_build/dchb_town/04_build_towns_long.do"
+        do "$dchb_climate_code/01_build/dchb_town/00_shp2dta_census_towns.do"
+        do "$dchb_climate_code/01_build/dchb_town/01_import_census_towns.do"
+        do "$dchb_climate_code/01_build/dchb_town/02_prep_census_towns.do"
+        do "$dchb_climate_code/01_build/dchb_town/03_clean_towns_wide.do"
+        do "$dchb_climate_code/01_build/dchb_town/04_build_towns_long.do"
+        do "$dchb_climate_code/01_build/dchb_town/05_towns_final.do"
 
     }
 
     * Regression output
     if `REG_OUTPUT' == 1 {
 
-        do "$clives_code/02_analysis/00_prep_towns_temperature.do"
-        do "$clives_code/02_analysis/01_reghdfe_towns_temp.do"
-        do "$clives_code/02_analysis/plot1_reg_pct_wrk_tbar_mean.do"
+        do "$dchb_climate_code/02_analysis/00_prep_towns_climate.do"
+        do "$dchb_climate_code/02_analysis/01_reghdfe_towns_temp.do"
+        do "$dchb_climate_code/02_analysis/plot1_reg_pct_wrk_tbar_mean.do"
 
     }

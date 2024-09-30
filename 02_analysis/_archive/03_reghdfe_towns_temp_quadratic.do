@@ -5,14 +5,13 @@
 * regression estimates
 
     * use analysis data
-    // use "$a_input/00_prep_towns_temperature.dta" , clear
+    // use "$a_input/00_prep_towns_climate.dta" , clear
 
         * keep towns that exist from a particular year
         // bys id_town (census_dec) : gen etag = (exist == 1 & census_dec == 1961)
         // bys id_town (census_dec) : egen ktag = max(etag)
         // keep if ktag == 1
 
-    cap mkdir "$a_output/estimates"
 
     ****************************************************************************
     *** Reg workers by category
@@ -23,16 +22,17 @@
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
-        // keep if years_exist >= 4
+        lab var tbar_mean "Decadal mean temp. (C)"
+        lab var tbar_min " Decadal min temp. (C)"
+        lab var tbar_max "Decadal max temp. (C)"
+        lab var rain_mean "Decadal mean rain (mm)"
 
-        lab var tlst_mean "Decadal mean temp. (C)"
-        lab var tlst_min " Decadal min temp. (C)"
-        lab var tlst_max "Decadal max temp. (C)"
-        lab var plst_mean "Decadal mean rain (mm)"
+        gen tbar_mean_sq = tbar_mean^2
+        lab var tbar_mean_sq "Decadal mean temp. squared (C)"
 
-        local fe_vars id_town census_dec
+        local fe_vars id_town census_dec styear
 
         est clear // clear estimates
 
@@ -42,61 +42,23 @@
         * worker categories
         qui {
         foreach sex in t m f {
-        foreach stat in mean min max {
-
-        *-------------- Log population & pdensity
-        foreach yvar in pop pdensity {
+        foreach stat in mean {
+        foreach yvar in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
         nois di "calculating: `sex'_`yvar'_`stat'"
 
                 eststo  `sex'_`yvar'_`stat' : ///
-                        reghdfe log_`sex'_`yvar' c.tlst_`stat' c.plst_mean ///
-                        , absorb(`fe_vars') vce(cluster id_town) nocons
-
-                sum log_`sex'_`yvar' if e(sample)
-                estadd scalar Mean = r(mean) // store mean
-
-                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
-
-        /* end yvar loop */
-        }
-
-        *-------------- % of workers / town population
-        foreach yvar in wrk {
-
-        nois di "calculating: `sex'_`yvar'_`stat'"
-
-                eststo  `sex'_`yvar'_`stat' : ///
-                        reghdfe pct_`sex'_`yvar' c.tlst_`stat' c.plst_mean ///
+                        reghdfe pct_`sex'_`yvar' c.tbar_`stat' c.tbar_`stat'_sq c.rain_mean ///
                         , absorb(`fe_vars') vce(cluster id_town) nocons
 
                 sum pct_`sex'_`yvar' if e(sample)
                 estadd scalar Mean = r(mean) // store mean
 
-                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
+                cap mkdir "$a_output/estimates/binned/"
+                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/binned/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
 
         /* end yvar loop */
         }
-
-        *-------------- % of categories / workers
-        foreach yvar in agwrk nonagwrk {
-        * foreach yvar in agwrk nonagwrk clwrk alwrk {
-        * foreach yvar in agwrk nonagwrk clwrk alwrk hhwrk otwrk {
-
-        nois di "calculating: `sex'_`yvar'_`stat'"
-
-                eststo  `sex'_`yvar'_`stat' : ///
-                        reghdfe shr_`sex'_`yvar' c.tlst_`stat' c.plst_mean ///
-                        , absorb(`fe_vars') vce(cluster id_town) nocons
-
-                sum shr_`sex'_`yvar' if e(sample)
-                estadd scalar Mean = r(mean) // store mean
-
-                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
-
-        /* end yvar loop */
-        }
-
         /* end stat loop */
         }
         /* end sex loop */
@@ -107,24 +69,24 @@
 
     *** Export tables
 
-        foreach sex in t m f {
-        foreach stat in mean min max {
+    foreach sex in t m f {
+        foreach stat in mean {
 
-            * Table: total workers on mean temp.
-            esttab `sex'_*_`stat' using "${tex_dir}/tables/reg_`sex'_workers_category_temperature_`stat'.tex", ///
-                mtitles("Log. pop" "Log. pdensity" "Pct. workers" "Ag. share" "Non-ag. share") ///
+            * Table: workers on temperature (quadratic form)
+            esttab `sex'_*_`stat' using "${tex_dir}/tables/quadratic_reg_`sex'_workers_category_temperature_`stat'.tex", ///
+                mtitles("Nonworkers" "Workers" "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
                 b(%9.3f) se(%9.3f) star label booktabs replace ///
+                keep(tbar_`stat' tbar_`stat'_sq rain_mean) ///
+                order(tbar_`stat' tbar_`stat'_sq rain_mean) ///
+                coeflabels(tbar_`stat' "Temperature" tbar_`stat'_sq "Temperature\textsuperscript{2}" rain_mean "Rainfall") ///
                 stats(Mean N, fmt(%9.3f %9.0g) labels("Mean" "N")) ///
                 starlevels(* 0.10 ** 0.05 *** 0.01) ///
-                note("Standard errors in parentheses.")
+                note("Standard errors in parentheses. Temperature coefficients multiplied by 100 for readability.")
 
-                * mtitles("Log pop." "Log pdensity" "Workers" "Ag." "Non-Ag." "Cultivators" "Ag. Labourers") ///
-                * mtitles("Nonworkers" "Workers" "Ag." "Non-Ag." "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
-                * mtitles("Nonworkers" "Workers" "Ag." "Non-Ag.") ///
         /* end stat loop */
         }
-        /* end sex loop */
-        }
+    /* end sex loop */
+    }
 
 
 /*
@@ -140,7 +102,7 @@
         * Rabi = Dec-May. sowing = Dec-Feb. harvest = Apr-May
     */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
         local fe_vars id_town census_dec
 
@@ -182,7 +144,7 @@
 
     *** Export tables
 
-        use "$a_input/00_prep_towns_temperature.dta" , clear
+        use "$a_input/00_prep_towns_climate.dta" , clear
 
         * Labels
         lab var tkharall_mean "Decadal kharif temp. (C)"
@@ -245,7 +207,7 @@
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"
@@ -309,6 +271,5 @@
         /* end sex loop */
         }
 
-
-*---------------------------------------------------------------------------
 */
+*---------------------------------------------------------------------------

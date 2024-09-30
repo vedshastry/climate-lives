@@ -5,14 +5,13 @@
 * regression estimates
 
     * use analysis data
-    // use "$a_input/00_prep_towns_temperature.dta" , clear
+    // use "$a_input/00_prep_towns_climate.dta" , clear
 
         * keep towns that exist from a particular year
         // bys id_town (census_dec) : gen etag = (exist == 1 & census_dec == 1961)
         // bys id_town (census_dec) : egen ktag = max(etag)
         // keep if ktag == 1
 
-    cap mkdir "$a_output/estimates"
 
     ****************************************************************************
     *** Reg workers by category
@@ -23,26 +22,14 @@
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"
         lab var tbar_max "Decadal max temp. (C)"
         lab var rain_mean "Decadal mean rain (mm)"
 
-        * generate dummy for each ID
-        // id_town, census_dec already covered in panelvar and timevar
-        local calc_fe_vars  styear
-
-        qui foreach var of varlist `calc_fe_vars' {
-            nois di "Generating dummies for `var'"
-            levelsof `var' // iterate over values of variable
-            foreach i in `r(levels)' {
-                gen     _I`var'_`i' = (`var' == `i')
-            }
-        }
-
-        local fe_vars _I*
+        local fe_vars id_town census_dec styear
 
         est clear // clear estimates
 
@@ -57,27 +44,18 @@
 
         nois di "calculating: `sex'_`yvar'_`stat'"
 
-                eststo  `sex'_`yvar'_`stat' : reg2hdfespatial pct_`sex'_`yvar' c.tbar_`stat' c.rain_mean `fe_vars' ///
-                                    , timevar(census_dec) panelvar(id_town) ///
-                                    lat(y) lon(x) distcutoff(100) lagcutoff(3)
+                eststo  `sex'_`yvar'_`stat' : ///
+                        reghdfe pct_`sex'_`yvar' ib0.bin_tbar_`stat' c.rain_mean ///
+                        , absorb(`fe_vars') vce(cluster id_town) nocons
 
                 sum pct_`sex'_`yvar' if e(sample)
                 estadd scalar Mean = r(mean) // store mean
 
-                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/reg2hfespatial_`sex'_`yvar'_`stat'" , id(pid) replace reproducible
+                cap mkdir "$a_output/estimates/binned/"
+                estwrite `sex'_`yvar'_`stat' using "$a_output/estimates/binned/`sex'_`yvar'_`stat'" , id(pid) replace reproducible
 
         /* end yvar loop */
         }
-
-            * Table: total workers on mean temp.
-            esttab `sex'_*_`stat' using "${tex_dir}/tables/reg2hdfespatial_`sex'_workers_category_temperature_`stat'.tex", ///
-                mtitles("Nonworkers" "Workers" "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
-                keep(*tbar* *rain*) ///
-                b(%9.3f) se(%9.3f) star label booktabs replace ///
-                stats(Mean N, fmt(%9.3f %9.0g) labels("Mean" "N")) ///
-                starlevels(* 0.10 ** 0.05 *** 0.01) ///
-                note("Standard errors in parentheses.")
-
         /* end stat loop */
         }
         /* end sex loop */
@@ -86,44 +64,89 @@
         }
 
 
-    *** Export tables
+*** Export tables
 
-    /*
-    use "$a_input/00_prep_towns_temperature.dta" , clear
-        foreach sex in t m f {
-        foreach stat in mean min max {
-        foreach yvar in nonwrk wrk clwrk alwrk hhwrk otwrk {
+    foreach sex in t m f {
+        foreach stat in mean {
 
-            estread     "$a_output/estimates/reg2hfespatial_`sex'_`yvar'_`stat'" , id(pid)
-
-        /* end yvar loop */
-        }
-        /* end stat loop */
-        }
-        /* end sex loop */
-        }
-
-
-        foreach sex in t m f {
-        foreach stat in mean min max {
-
-            * Table: total workers on mean temp.
-            esttab `sex'_*_`stat' using "${tex_dir}/tables/reg2hdfespatial_`sex'_workers_category_temperature_`stat'.tex", ///
+            * Table: workers on binned temperatures
+            esttab `sex'_*_`stat' using "${tex_dir}/tables/binned_reg_`sex'_workers_category_temperature_`stat'.tex", ///
                 mtitles("Nonworkers" "Workers" "Cultivators" "Ag. Labourers" "HH Industry" "Other") ///
-                keep(*tbar* *rain*) ///
                 b(%9.3f) se(%9.3f) star label booktabs replace ///
+                drop(rain_mean) ///
+                rename(0.bin_tbar_`stat' "18-20°C" ///
+                       1.bin_tbar_`stat' "20-22°C" ///
+                       2.bin_tbar_`stat' "22-24°C" ///
+                       3.bin_tbar_`stat' "24-26°C" ///
+                       4.bin_tbar_`stat' "26-28°C" ///
+                       5.bin_tbar_`stat' "28-30°C" ///
+                       6.bin_tbar_`stat' "30-32°C") ///
+                coeflabels(0.bin_tbar_`stat' "18-20°C" ///
+                           1.bin_tbar_`stat' "20-22°C" ///
+                           2.bin_tbar_`stat' "22-24°C" ///
+                           3.bin_tbar_`stat' "24-26°C" ///
+                           4.bin_tbar_`stat' "26-28°C" ///
+                           5.bin_tbar_`stat' "28-30°C" ///
+                           6.bin_tbar_`stat' "30-32°C") ///
                 stats(Mean N, fmt(%9.3f %9.0g) labels("Mean" "N")) ///
                 starlevels(* 0.10 ** 0.05 *** 0.01) ///
-                note("Standard errors in parentheses.")
+                addnotes("Standard errors in parentheses." ///
+                         "Temperature bins are in °C, with 18-20°C as the omitted category.")
 
         /* end stat loop */
         }
-        /* end sex loop */
-        }
-    */
+    /* end sex loop */
+    }
+
+** Coefplot
+foreach sex in t m f {
+    foreach stat in mean {
+
+        local sex t
+        local stat mean
+
+        // Create the coefficient plot
+        coefplot ///
+            (`sex'_nonwrk_`stat', label("Nonworkers") msymbol(O) color(navy)) ///
+            (`sex'_wrk_`stat', label("Workers") msymbol(D) color(maroon)) ///
+            (`sex'_clwrk_`stat', label("Cultivators") msymbol(T) color(forest_green)) ///
+            (`sex'_alwrk_`stat', label("Ag. Laborers") msymbol(S) color(dkorange)) ///
+            (`sex'_hhwrk_`stat', label("HH Industry") msymbol(+) color(purple)) ///
+            (`sex'_otwrk_`stat', label("Other") msymbol(X) color(cranberry)), ///
+            keep(*.bin_tbar_`stat') ///
+            coeflabels(0.bin_tbar_`stat' = "18-20" ///
+                       1.bin_tbar_`stat' = "20-22" ///
+                       2.bin_tbar_`stat' = "22-24" ///
+                       3.bin_tbar_`stat' = "24-26" ///
+                       4.bin_tbar_`stat' = "26-28" ///
+                       5.bin_tbar_`stat' = "28-30" ///
+                       6.bin_tbar_`stat' = "30-32", ///
+                       notick labsize(small)) ///
+            ylabel(, labsize(small)) ///
+            xlabel(, labsize(small)) ///
+            xtitle("Temperature Bins (°C)", size(small)) ///
+            ytitle("Coefficient (Percentage Points)", size(small)) ///
+            legend(rows(2) size(small)) ///
+            yline(0, lcolor(gs8) lpattern(dash)) ///
+            msymbol(S) ///
+            msize(small) ///
+            ciopts(recast(rcap) lwidth(thin)) ///
+            mlabel format(%9.3f) mlabposition(1) mlabgap(*2) ///
+            mlabsize(vsmall) ///
+            title("Effects of Temperature on Worker Categories (`sex', `stat')", size(medium)) ///
+            note("Note: 18-20°C is the reference category. Whiskers represent 95% confidence intervals.", size(vsmall)) ///
+            graphregion(color(white)) ///
+            bgcolor(white) ///
+            vertical
+             recast(connected)
+
+        graph export "$a_output/figures/coefplot_`sex'_`stat'.png", replace
+    }
+}
+
+
 
 /*
-
     ****************************************************************************
     *** Reg workers per category on 'seasonal' temperature
     ****************************************************************************
@@ -136,7 +159,7 @@
         * Rabi = Dec-May. sowing = Dec-Feb. harvest = Apr-May
     */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
         local fe_vars id_town census_dec
 
@@ -178,7 +201,7 @@
 
     *** Export tables
 
-        use "$a_input/00_prep_towns_temperature.dta" , clear
+        use "$a_input/00_prep_towns_climate.dta" , clear
 
         * Labels
         lab var tkharall_mean "Decadal kharif temp. (C)"
@@ -241,7 +264,7 @@
         2. Fixed effects: Town, decade, state-year
         */
 
-    use "$a_input/00_prep_towns_temperature.dta" , clear
+    use "$a_input/00_prep_towns_climate.dta" , clear
 
         lab var tbar_mean "Decadal mean temp. (C)"
         lab var tbar_min " Decadal min temp. (C)"

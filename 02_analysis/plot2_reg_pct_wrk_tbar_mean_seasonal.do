@@ -21,7 +21,7 @@
 
         foreach cat in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
-            use "$a_input/00_prep_towns_temperature.dta" , clear
+            use "$a_input/00_prep_towns_climate.dta" , clear
 
             estread `sex'_`cat'_`ssn'`mon'_mean using "$a_output/estimates/`sex'_`cat'_`ssn'`mon'_mean" , id(pid)
             est replay `sex'_`cat'_`ssn'`mon'_mean

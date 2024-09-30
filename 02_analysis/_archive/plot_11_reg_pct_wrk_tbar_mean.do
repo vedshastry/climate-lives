@@ -16,7 +16,7 @@
     qui foreach sex in t m f {
     foreach cat in nonwrk wrk clwrk alwrk hhwrk otwrk {
 
-        use "$a_input/00_prep_towns_temperature.dta" , clear
+        use "$a_input/00_prep_towns_climate.dta" , clear
 
         est clear
 
