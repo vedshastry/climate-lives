@@ -20,7 +20,8 @@ else {
 
 * use 1961 sheet
   // import delimited using "$input/town/deo/1961.csv", clear stringcols(_all) favorstrfixed
-  use "$dchb/input/town/deo/deo_chanchal_dta/1981.dta" , clear
+  // use "$dchb/input/town/deo/deo_chanchal_dta/1981.dta" , clear
+  import excel "$dt_raw/DCHB/DCHB_1961_1981_PCA_DEOChanchal.xlsx" , clear sheet("1961")
 
 *-------------------------------------------------------------------------------
 * Rename columns
@@ -28,7 +29,7 @@ else {
 
         * Metadata
         rename (A B C D E F G H)  (filename pdf_page state district subdivision block group_level1 group_level2)
-        rename (I J K L M)        (town_name town_name_2011 facilities area area_units)
+        rename (I J K L M)        (town_name_1961 town_name_2011 facilities area area_units)
         rename (N O)              (houses households)
 
         * Demographics
@@ -53,17 +54,37 @@ else {
         * Other
         rename (BJ BK)            (notes year)
 
+        * Checksums
+        rename (BS BT BU)         (chk_pop_mf chk_pop_lit chk_pop_scst)
+        rename (BV BW)            (chk_pop_wn chk_wrk_i)
+
+        ** Add 1961 suffix
+*-------------------------------------------------------------------------------
+* Clean up
+*-------------------------------------------------------------------------------
+
       * Keep vars
-      drop ? ?? // columns A-Z and AA-ZZ
+      isvar ? ?? // columns A-Z and AA-ZZ
+      drop `r(varlist)' // columns A-Z and AA-ZZ
+
+        * Use 1st row as variable labels
+        foreach var of varlist * {
+            lab var     `var'   "`=`var'[1]'"
+        }
+        drop in 1
+
+        * drop empty town/filenames
+            drop if mi(filename)
+            drop if mi(town_name_1961)
 
 *-------------------------------------------------------------------------------
 * Rename to standardize
 *-------------------------------------------------------------------------------
 
 * rename numeric data columns
-  qui rename (filename pdf_page_no) (filename_1961 pdf_page_1961)
+  qui rename (filename pdf_page) (filename_1961 pdf_page_1961)
   qui rename (houses households) (nhouses_1961 nhouseholds_1961)
-  qui rename (pop_t pop_m pop_f) (townpop_1961 townpop_m_1961 townpop_f_1961)
+  qui rename (pop_t pop_m pop_f) (pop_t_1961 pop_m_1961 pop_f_1961)
   qui rename (sc_t sc_m sc_f) (sc_t_1961 sc_m_1961 sc_f_1961)
   qui rename (st_t st_m st_f) (st_t_1961 st_m_1961 st_f_1961)
   qui rename (edu_t edu_m edu_f) (edu_t_1961 edu_m_1961 edu_f_1961)
@@ -82,9 +103,6 @@ else {
 * create raw town name for id
 egen raw_name_1961 = concat(filename_1961 pdf_page_1961 town_name_1961)
 
-* drop empty town/filenames
-    drop if filename == ""
-    drop if town_name_1961 == ""
 
 * trim state/district names
   replace state = strlower(ustrtrim(state))
@@ -102,9 +120,8 @@ egen raw_name_1961 = concat(filename_1961 pdf_page_1961 town_name_1961)
     split area_ag1, p("/") destring gen(area_)
 
 		* sieve numeric from area & destring (if not already numeric)
-			capture egen area_num = sieve(area_1), char(0123456789.)
-			capture gen area_num = area_1
-			capture destring area_num, replace
+			strkeep  area , numeric keep(".") gen(area_num)
+			destring area_num, replace force
 
 		* convert area_num to sq.km measurement only
 		gen area_sqkm_1961 = .
@@ -117,7 +134,7 @@ egen raw_name_1961 = concat(filename_1961 pdf_page_1961 town_name_1961)
 			replace area_sqkm_1961 = area_sqkm_1961 + 0.025*area_ag2 if regexm(area_units, "A-G|a-g")
 
 	* round off to 2 decimals
-	format area_sqkm_1961 %9.2g
+	format area_sqkm_1961 %9.2f
   * drop other area info & round off to 2 decimals
   drop area area_units area_1 area_2 area_ag1 area_ag2 area_num
 
@@ -125,6 +142,10 @@ egen raw_name_1961 = concat(filename_1961 pdf_page_1961 town_name_1961)
 * store list to destring numeric vars currently as string
 unab numerics : area_sqkm_1961-wrk_nonf_1961
 ds `numerics', has(type string)
+
+    unab numerics : townpop_*
+    strkeep `r(varlist)' , numeric keep(".") replace
+    destring `r(varlist)' , replace
 
 * iterate over list retrieved above
 foreach var in `r(varlist)'{
@@ -453,9 +474,9 @@ save `61entry', replace
     label var nhouseholds_1961 "1961 number of households"
 
   * town population
-    label var townpop_1961 "1961 town population"
-    label var townpop_m_1961 "1961 population (male)"
-    label var townpop_f_1961 "1961 population (female)"
+    label var pop_t_1961 "1961 town population"
+    label var pop_m_1961 "1961 population (male)"
+    label var pop_f_1961 "1961 population (female)"
   * sc
     label var sc_t_1961 "1961 number of scheduled castes (total)"
     label var sc_m_1961 "1961 number of scheduled castes (male)"
@@ -515,7 +536,7 @@ save `61entry', replace
 *-------------------------------------------------------------------------------
 
 * store variable lists in local
-  local numvars "area_sqkm_1961 nhouses_1961 nhouseholds_1961 townpop_1961 townpop_m_1961 townpop_f_1961 sc_t_1961 sc_m_1961 sc_f_1961 st_t_1961 st_m_1961 st_f_1961 edu_t_1961 edu_m_1961 edu_f_1961 workers_t_1961 workers_m_1961 workers_f_1961 wrk_1t_1961 wrk_1m_1961 wrk_1f_1961 wrk_2t_1961 wrk_2m_1961 wrk_2f_1961 wrk_3t_1961 wrk_3m_1961 wrk_3f_1961 wrk_4t_1961 wrk_4m_1961 wrk_4f_1961 wrk_5t_1961 wrk_5m_1961 wrk_5f_1961 wrk_6t_1961 wrk_6m_1961 wrk_6f_1961 wrk_7t_1961 wrk_7m_1961 wrk_7f_1961 wrk_8t_1961 wrk_8m_1961 wrk_8f_1961 wrk_9t_1961 wrk_9m_1961 wrk_9f_1961 wrk_nont_1961 wrk_nonm_1961 wrk_nonf_1961"
+  local numvars "area_sqkm_1961 nhouses_1961 nhouseholds_1961 pop_t_1961 pop_m_1961 pop_f_1961 sc_t_1961 sc_m_1961 sc_f_1961 st_t_1961 st_m_1961 st_f_1961 edu_t_1961 edu_m_1961 edu_f_1961 workers_t_1961 workers_m_1961 workers_f_1961 wrk_1t_1961 wrk_1m_1961 wrk_1f_1961 wrk_2t_1961 wrk_2m_1961 wrk_2f_1961 wrk_3t_1961 wrk_3m_1961 wrk_3f_1961 wrk_4t_1961 wrk_4m_1961 wrk_4f_1961 wrk_5t_1961 wrk_5m_1961 wrk_5f_1961 wrk_6t_1961 wrk_6m_1961 wrk_6f_1961 wrk_7t_1961 wrk_7m_1961 wrk_7f_1961 wrk_8t_1961 wrk_8m_1961 wrk_8f_1961 wrk_9t_1961 wrk_9m_1961 wrk_9f_1961 wrk_nont_1961 wrk_nonm_1961 wrk_nonf_1961"
   local idvars "string61 isostate_1961 scode_1961 sname_1961 dcode_1961 dname_1961 sdivname_1961 sdname_1961 sdclass_1961 tgroup_1961 tsubgroup_1961 tname_1961 civic_code_1961 raw_name_1961"
   local meta "filename_1961 pdf_page_1961"
 

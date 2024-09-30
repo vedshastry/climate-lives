@@ -121,6 +121,6 @@
 * compress and save
 
     compress
-    save "$b_output/dchb_town/02_prep_census_towns.dta" , replace
+    save "$b_output/dchb_town/02_check_census_towns.dta" , replace
 
 *** End
