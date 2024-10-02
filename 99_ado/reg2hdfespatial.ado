@@ -13,7 +13,7 @@ capture program drop reg2hdfespatial
 *!
 *!
 *! You can also specify other fixed effects:
-*! reg2hdfespatial Yvar     Xvarlist   ,timevar(year) panelvar(district) altfetime(regionyear)  lat(y) lon(x) distcutoff(500) lagcutoff(20) 
+*! reg2hdfespatial Yvar     Xvarlist   ,timevar(year) panelvar(district) altfetime(regionyear)  lat(y) lon(x) distcutoff(500) lagcutoff(20)
 *!
 *! here I specify the time variable as the year, but I demean the data first
 *! by region x year fixed effects.
@@ -22,7 +22,7 @@ capture program drop reg2hdfespatial
 /*-----------------------------------------------------------------------------
 
  Syntax:
- 
+
  reg2hdfespatial Yvar Xvarlist, lat(latvar) lon(lonvar) Timevar(tvar) Panelvar(pvar) [DISTcutoff(#) LAGcutoff(#) bartlett DISPlay star dropvar demean altfetime(varname) altfepanel(varname)]
 
  -----------------------------------------------------------------------------*/
@@ -34,12 +34,12 @@ syntax varlist(ts fv min=2) [if] [in], ///
 				lat(varname numeric) lon(varname numeric) ///
 				Timevar(varname numeric) Panelvar(varname numeric) [LAGcutoff(integer 0) DISTcutoff(real 1) ///
 				DISPlay star bartlett dropvar altfetime(varname) altfepanel(varname) ]
-				
+
 /*--------PARSING COMMANDS AND SETUP-------*/
 
 preserve
 if "`if'"~="" {
-	qui keep `if' 
+	qui keep `if'
 }
 
 
@@ -49,7 +49,7 @@ gen touse = `touse'
 
 *keep if touse
 //parsing variables
-loc Y = word("`varlist'",1)		
+loc Y = word("`varlist'",1)
 
 loc listing "`varlist'"
 
@@ -62,7 +62,7 @@ foreach i of loc listing {
 	if "`i'" ~= "`Y'"{
 		loc X "`X' `i'"
 		scalar k_variables = k_variables + 1 // # indep variables
-		
+
 	}
 }
 local wdir `c(pwd)'
@@ -81,40 +81,40 @@ foreach f in `tempfiles' {
 quietly {
 if("`altfepanel'" !="" & "`altfetime'" !="") {
 di "CASE 1"
-reg2hdfe `Y' `X' `lat' `lon' `timevar' `panelvar' ,  id1(`altfepanel') id2(`altfetime') out("`tdir'") noregress 
-loc iteratevarlist "`Y' `X' `lat' `lon' `timevar' `panelvar'" 
+reg2hdfe `Y' `X' `lat' `lon' `timevar' `panelvar' ,  id1(`altfepanel') id2(`altfetime') out("`tdir'") noregress
+loc iteratevarlist "`Y' `X' `lat' `lon' `timevar' `panelvar'"
 reg2hdfe `Y' `X' , id1(`altfepanel') id2(`altfetime')
 }
 if("`altfepanel'" =="" & "`altfetime'" !="") {
 di "CASE 2"
 
-reg2hdfe `Y' `X' `lat' `lon' `timevar' ,  id1(`panelvar') id2(`altfetime') out("`tdir'") noregress 
-loc iteratevarlist "`Y' `X' `lat' `lon' `timevar' " 
+reg2hdfe `Y' `X' `lat' `lon' `timevar' ,  id1(`panelvar') id2(`altfetime') out("`tdir'") noregress
+loc iteratevarlist "`Y' `X' `lat' `lon' `timevar' "
 
 reg2hdfe `Y' `X' , id1(`panelvar') id2(`altfetime')
 }
 if("`altfepanel'" !="" & "`altfetime'" =="") {
 di "CASE 3"
 
-reg2hdfe `Y' `X' `lat' `lon' `panelvar' ,  id1(`altfepanel') id2(`timevar') out("`tdir'") noregress 
-reg2hdfe `Y' `X' , id1(`altfepanel') id2(`timevar') 
+reg2hdfe `Y' `X' `lat' `lon' `panelvar' ,  id1(`altfepanel') id2(`timevar') out("`tdir'") noregress
+reg2hdfe `Y' `X' , id1(`altfepanel') id2(`timevar')
 loc iteratevarlist "`Y' `X' `lat' `lon' `panelvar'"
 }
 if("`altfepanel'" =="" & "`altfetime'" =="") {
 di "CASE 4"
-reg2hdfe `Y' `X' `lat' `lon' ,  id1(`panelvar') id2(`timevar') out("`tdir'") noregress 
-loc iteratevarlist "`Y' `X' `lat' `lon'" 
+reg2hdfe `Y' `X' `lat' `lon' ,  id1(`panelvar') id2(`timevar') out("`tdir'") noregress
+loc iteratevarlist "`Y' `X' `lat' `lon'"
 reg2hdfe `Y' `X' ,  id1(`panelvar') id2(`timevar')
 }
 
 	foreach var of varlist `X' {
-		lincom `var'		
+		lincom `var'
 		if `r(se)' != 0 {
 			loc newVarList "`newVarList' `var'"
 			scalar k_variables = k_variables + 1
 		}
 	}
-	
+
 	loc XX "`newVarList'"
 
 
@@ -126,7 +126,7 @@ tempfile tmp1 tmp2 tmp3 readdata
 	qui save "`tmp1'", replace
 	if "`cluster'"!="" {
 		merge __uid using _clustervar
-		if r(min)<r(max) { 
+		if r(min)<r(max) {
 			di "Fatal Error"
 			error 198
 		}
@@ -135,13 +135,13 @@ tempfile tmp1 tmp2 tmp3 readdata
 		rename __clustervar `clustervar'
 		qui save "`tmp1'", replace
 		}
-	
+
 
 * Now read the original variables
 	foreach var in `iteratevarlist'  {
 		merge __uid using _`var'
 		sum _merge, meanonly
-		if r(min)<r(max) { 
+		if r(min)<r(max) {
 			di "Fatal Error"
 			error 198
 		}
@@ -155,8 +155,8 @@ tempfile tmp1 tmp2 tmp3 readdata
 	foreach var in  `iteratevarlist'  {
 		rename __o_`var' `var'
 	}
-	
-	
+
+
  	tempvar yy sy
 	gen double `yy'=(`depvar'-r(mean))^2
 	gen double `sy'=sum(`yy')
@@ -167,11 +167,11 @@ tempfile tmp1 tmp2 tmp3 readdata
 	foreach var in  `iteratevarlist'  {
 		merge 1:1 __uid using _`var'
 		sum _merge, meanonly
-		if r(min)<r(max) { 
+		if r(min)<r(max) {
 			di "Fatal Error."
 			error 198
 		}
-		
+
 	drop _merge
 	}
 
@@ -184,11 +184,11 @@ tempfile tmp1 tmp2 tmp3 readdata
  		if("`altfetime'" !="" ) {
  		rename __o_`timevar' `timevar'
  		}
- 			
+
 		drop __o_*
 		sort __uid
 		qui save "`tmp3'", replace
-        
+
 	foreach var in `Y' `X'  {
 		rename __t_`var' `var'
 	}
@@ -198,5 +198,3 @@ ols_spatial_HAC `Y' `XX', lat(`lat') lon(`lon') timevar(`timevar') panelvar(`pan
 
 cd "`wdir'"
 end
-
-

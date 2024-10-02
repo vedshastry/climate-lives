@@ -21,7 +21,7 @@ prog def dchb_check
 				- Set LHS and RHS to missing otherwise
 		*/
 
-	syntax [if] , chkname(string) lhs(varlist max=1) rhs(varlist) Threshold(real) [return]
+	syntax [if] , chkname(string) lhs(varlist max=1) rhs(varlist) Threshold(real) [return missing]
 
 		* chkname: check name
 		* lhs: 1 variable on LHS
@@ -36,15 +36,13 @@ prog def dchb_check
 	nois di "RHS vars: `rhs'"
 
 	egen 	rnm_`chkname'  = rownonmiss(`rhs') // Calculate row non missing indicators of RHS
+
+	mvencode 	`rhs' 	if rnm_`chkname' > 0 , mv(0) override // RHS missings to 0 if at least 1 RHS exists
+
 	egen 	rsum_`chkname'  = rowtotal(`rhs') , m // Calculate Sum of RHS
 
 	* LHS = RHS total if LHS missing but at least 1 RHS exists
-	replace 	`lhs' = rsum_`chkname' ///
-				if rnm_`chkname' > 0 & mi(`lhs')
-
-	* RHS missings to 0 if at least 1 RHS exists
-	mvencode 	`rhs' ///
-				if rnm_`chkname' > 0 , mv(0) override
+	replace 	`lhs' = rsum_`chkname' 		if rnm_`chkname' > 0 & mi(`lhs')
 
 	* Calculate LHS-RHS difference and percentage
 	gen 	byte 	diff_`chkname' = (`lhs' - rsum_`chkname') if rnm_`chkname' > 0  // LHS - RHS
@@ -66,6 +64,15 @@ prog def dchb_check
 	}
 	else {
 		nois di "Vars in: rnm_`chkname' rsum_`chkname' diff_`chkname' pcdiff_`chkname'"
+	}
+
+	* Set vars to missing if specified
+	if "`missing'" == "" {
+		foreach var of varlist `lhs' `rhs' {
+			replace `var' = .m 		if chk_`chkname' == 0
+		}
+	}
+	else {
 	}
 
 	/* end quietly */
