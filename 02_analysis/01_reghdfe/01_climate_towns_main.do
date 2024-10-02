@@ -28,6 +28,8 @@
     use     "$a_input/00_prep_towns_climate.dta" , clear
 
         *   Clean observations
+        bys id_town (census_dec) : egen n_decades = sum(exist)
+        keep if n_decades >= 5
 
     * 1. Outcome variable: workers in each category, by gender aggregation and temperature statistic.
     local   outcome1 "log_`sex'_`yvar'"

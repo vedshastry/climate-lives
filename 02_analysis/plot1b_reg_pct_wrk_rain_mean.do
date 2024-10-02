@@ -14,21 +14,21 @@
 
     * Populate the frame with coefficients and means
     qui foreach sex in t m f {
-    foreach cat in pop pdensity wrk agwrk nonagwrk {
+    foreach cat in pop pdensity wrk nonagwrk agwrk clwrk alwrk {
 
         use "$a_input/00_prep_towns_climate.dta" , clear
 
         est clear
 
-        estread     "$a_output/estimates/`sex'_`cat'_mean" , id(pid)
-        est replay  `sex'_`cat'_mean
+        estread     "$a_output/01_reghdfe/01_climate_towns/`sex'_mean_`cat'" , id(pid)
+        est replay  `sex'_mean_`cat'
 
         * reg output
-        local coef  : di r(table)[1,1] // Coefficient
-        local se    : di r(table)[2,1] // S.E
-        local p     : di r(table)[4,1] // P value
-        local ll    : di r(table)[5,1] // P value
-        local ul    : di r(table)[6,1] // P value
+        local coef  : di r(table)[1,2] // Coefficient
+        local se    : di r(table)[2,2] // S.E
+        local p     : di r(table)[4,2] // P value
+        local ll    : di r(table)[5,2] // P value
+        local ul    : di r(table)[6,2] // P value
 
         * sample mean
         cap sum     log_`sex'_`cat' if _est_`sex'_`cat'_mean == 1
@@ -52,6 +52,10 @@
     * Clean up
     format  N_obs mean coef se p ll ul %12.4f
 
+    foreach var of varlist mean coef se p ll ul {
+        replace `var' = `var' * 10
+    }
+
     * P values
     gen     sigstars = ""
     replace sigstars = "*" if p <= 0.1
@@ -67,8 +71,11 @@
     replace cat_order = 0 if category == "pop"
     replace cat_order = 1 if category == "pdensity"
     replace cat_order = 2 if category == "wrk"
-    replace cat_order = 3 if category == "agwrk"
-    replace cat_order = 4 if category == "nonagwrk"
+    replace cat_order = 3 if category == "nonagwrk"
+    replace cat_order = 4 if category == "agwrk"
+    replace cat_order = 5 if category == "clwrk"
+    replace cat_order = 6 if category == "alwrk"
+    drop if cat_order <= 1
 
     gen     gen_order = .
     replace gen_order = 1 if gender == "t"
@@ -99,21 +106,20 @@
            legend(order(1 "Total" 2 "Male" 3 "Female") rows(1) size(small)) ///
            graphregion(color(white)) plotregion(color(white)) ///
             ylabel(-0.1(0.05)0.1, angle(0) format(%9.2f)) ///
-            title("Effects of a 1°C temperature increase", style(subheading)) ///
+            title("Effects of a 10 mm. increase in rainfall", style(subheading)) ///
             ytitle("Percentage change in workers", size(medsmall)) ///
             xtitle("") ///
-            xlabel( 2 "Log Population" 5 "Log Density" ///
-                   8 "% Workers" 11 "Ag. share" 14 "Non ag. share" ///
+            xlabel( 2 "% Workers" 5 "Share (non ag.)" 8 "Share (ag.)" 11 "Cultivators" 14 "Ag. Laborers" ///
                 , noticks labsize(small)) ///
             yline(0, lcolor(black) ) ///
-            xline(6.5, lcolor(maroon) ) ///
-            xline(3.5 9.5 12.5 15.5, lcolor(gs12) ) ///
+            xline(3.5 9.5, lcolor(maroon) ) ///
+            xline(6.5 12.5 15.5 , lcolor(gs12) ) ///
             note( ///
             "Source: Census of India - Primary Census Abstract [1961-2011]" ///
             "N = `N_obs' town X decade observations" ///
             , size(small))
 
-    graph export "${tex_dir}/figures/reg_workers_tbar_mean.png", as(png) replace
+    graph export "${tex_dir}/figures/reg_workers_rain_mean.png", as(png) replace
 
     /*
             yscale(range(-0.03 0.03)) ///

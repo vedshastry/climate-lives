@@ -43,7 +43,7 @@ use "$a_input/00_prep_towns_climate.dta", clear
     * List of variables
     qui foreach sex in t m f {
 
-    local vars "`sex'_pop `sex'_sc `sex'_st `sex'_lit `sex'_wrk `sex'_nonwrk"
+    local vars "`sex'_pop `sex'_sc `sex'_st `sex'_lit `sex'_wrk `sex'_marwrk `sex'_nonwrk"
 
         * Generate summary statistics by decade
         eststo clear
