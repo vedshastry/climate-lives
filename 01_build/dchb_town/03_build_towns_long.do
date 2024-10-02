@@ -7,7 +7,7 @@
 *-------------------------------------------------------------------------------
 
     frames reset
-    use "$b_output/dchb_town/03_clean_towns_wide.dta" , clear
+    use "$b_output/dchb_town/02_clean_towns_wide.dta" , clear
 
     * sanity check
     isid        id_town
@@ -58,7 +58,7 @@
 * 2. Reshape to long on town x census decade
 *-------------------------------------------------------------------------------
 
-    use "$b_output/dchb_town/03_clean_towns_wide.dta" , clear
+    use "$b_output/dchb_town/02_clean_towns_wide.dta" , clear
 
     local       i_vars ///
                 id_town xid x y idchain name_town name_st name_dt code_2011
@@ -71,12 +71,12 @@
                 area nhouses nhouseholds ///
                 t_pop m_pop f_pop ///
                 t_wrk m_wrk f_wrk ///
-                t_nonwrk m_nonwrk f_nonwrk ///
-                t_marwrk m_marwrk f_marwrk ///
+                t_nonagwrk m_nonagwrk f_nonagwrk ///
+                t_agwrk m_agwrk f_agwrk ///
                 t_clwrk m_clwrk f_clwrk ///
                 t_alwrk m_alwrk f_alwrk ///
-                t_hhwrk m_hhwrk f_hhwrk ///
-                t_otwrk m_otwrk f_otwrk ///
+                t_marwrk m_marwrk f_marwrk ///
+                t_nonwrk m_nonwrk f_nonwrk ///
                 t_sc m_sc f_sc ///
                 t_st m_st f_st ///
                 t_lit m_lit f_lit
@@ -118,4 +118,4 @@
 
 * Compress and save
     compress
-    save "$b_output/dchb_town/04_build_towns_long.dta" , replace
+    save "$b_output/dchb_town/03_build_towns_long.dta" , replace

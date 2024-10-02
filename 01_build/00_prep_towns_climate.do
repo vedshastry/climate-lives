@@ -91,8 +91,7 @@
     order   rain* tbar_* tmin_* tmax_* ?khar* ?rabi* ?lst* raw_*, after(t_nonagwrk)
     order   id_town census_dec name_* exist ///
             ?_pop ?_sc ?_st ?_lit ?_wrk ?_nonwrk ///
-            ?_agwrk ?_nonagwrk ?_clwrk ?_alwrk ?_hhwrk ?_otwrk ?_marwrk ///
-            shr_*
+            ?_nonagwrk ?_agwrk ?_clwrk ?_alwrk ?_marwrk shr_* pct_*
 
 
     * Labels

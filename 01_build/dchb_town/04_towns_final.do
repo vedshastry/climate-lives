@@ -2,11 +2,15 @@
 * use town long panel
 *-------------------------------------------------------------------------------
 
-    use "$b_output/dchb_town/04_build_towns_long.dta" , clear
+    use "$b_output/dchb_town/03_build_towns_long.dta" , clear
 
 *-------------------------------------------------------------------------------
 * 3. Clean up
 *-------------------------------------------------------------------------------
+
+    * Winsorize
+    // foreach var in  pop sc st lit wrk nonagwrk agwrk clwrk alwrk marwrk nonwrk {
+    // winsor2     pop  wrk nonagwrk agwrk clwrk alwrk marwrk nonwrk , by(name_st) replace cuts(0 98)
 
     * population density
     foreach gen in t m f {
@@ -19,39 +23,37 @@
     * Construct indicators
     ************************************************
 
-    * Agricultural workers include marginal workers
-    foreach     type in t m f {
-    egen        `type'_agwrk      =   rowtotal(`type'_clwrk `type'_alwrk) , m
-    egen        `type'_nonagwrk   =   rowtotal(`type'_hhwrk `type'_otwrk) , m
-    }
-
     * Pct variables (% of town population)
-        foreach var in  pop sc st lit wrk nonwrk marwrk ///
-                        agwrk nonagwrk clwrk alwrk hhwrk otwrk {
+        foreach var in  pop sc st lit wrk nonagwrk agwrk clwrk alwrk marwrk nonwrk {
 
             gen         pct_t_`var' = t_`var' / t_pop
-            gen         pct_m_`var' = m_`var' / t_pop
-            gen         pct_f_`var' = f_`var' / t_pop
+            gen         pct_m_`var' = m_`var' / m_pop
+            gen         pct_f_`var' = f_`var' / f_pop
 
             lab var     pct_t_`var' "pct t `var'"
             lab var     pct_m_`var' "pct m `var'"
             lab var     pct_f_`var' "pct f `var'"
 
+            foreach gen in t m f {
+                replace     pct_`gen'_`var' = .m if !inrange(pct_`gen'_`var',0,1)
+                lab var     pct_`gen'_`var' "pct `gen' `var'"
+            }
+
         }
 
     * Share of workers
-    foreach     var     in      marwrk clwrk alwrk hhwrk otwrk ///
-                                agwrk nonagwrk {
+        foreach var in  wrk nonagwrk agwrk clwrk alwrk marwrk nonwrk {
 
             gen         shr_t_`var' = t_`var' / t_wrk
-            gen         shr_m_`var' = m_`var' / t_wrk
-            gen         shr_f_`var' = f_`var' / t_wrk
+            gen         shr_m_`var' = m_`var' / m_wrk
+            gen         shr_f_`var' = f_`var' / f_wrk
 
-            lab var     shr_t_`var' "shr t `var'"
-            lab var     shr_m_`var' "shr m `var'"
-            lab var     shr_f_`var' "shr f `var'"
-
+            foreach gen in t m f {
+                replace     shr_`gen'_`var' = .m if !inrange(shr_`gen'_`var',0,1)
+                lab var     shr_`gen'_`var' "shr `gen' `var'"
+            }
     }
+
 
     * Log variables
         gen         log_area = log(area)
@@ -151,13 +153,13 @@
     lab var     m_alwrk "Male agricultural labour"
     lab var     f_alwrk "Female agricultural labour"
 
-    lab var     t_hhwrk "Total household industry workers"
-    lab var     m_hhwrk "Male household industry workers"
-    lab var     f_hhwrk "Female household industry workers"
-
-    lab var     t_otwrk "Total other or service workers"
-    lab var     m_otwrk "Male other or service workers"
-    lab var     f_otwrk "Female other or service workers"
+    // lab var     t_hhwrk "Total household industry workers"
+    // lab var     m_hhwrk "Male household industry workers"
+    // lab var     f_hhwrk "Female household industry workers"
+    //
+    // lab var     t_otwrk "Total other or service workers"
+    // lab var     m_otwrk "Male other or service workers"
+    // lab var     f_otwrk "Female other or service workers"
 
     lab var     t_agwrk "Agricultural workers"
     lab var     m_agwrk "Male agricultural workers"
