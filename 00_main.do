@@ -89,6 +89,8 @@ global nic_prices       "$dropbox/retail_price_data"
 * Toggles
 local   IMD 0
 local   DCHB_TOWN 0
+
+local   SUM_OUTPUT 0
 local   REG_OUTPUT 0
 
 
@@ -110,18 +112,27 @@ local   REG_OUTPUT 0
 
         do "$dchb_climate_code/01_build/dchb_town/00_shp2dta_census_towns.do"
         do "$dchb_climate_code/01_build/dchb_town/01_import_census_towns.do"
-        do "$dchb_climate_code/01_build/dchb_town/02_prep_census_towns.do"
-        do "$dchb_climate_code/01_build/dchb_town/03_clean_towns_wide.do"
-        do "$dchb_climate_code/01_build/dchb_town/04_build_towns_long.do"
-        do "$dchb_climate_code/01_build/dchb_town/05_towns_final.do"
+        do "$dchb_climate_code/01_build/dchb_town/02_prep_towns_wide.do"
+        do "$dchb_climate_code/01_build/dchb_town/03_build_towns_long.do"
+        do "$dchb_climate_code/01_build/dchb_town/04_towns_final.do"
 
+    * Analysis data
+        do "$dchb_climate_code/01_build/00_prep_towns_climate.do"
+    }
+
+
+    * Summary stats
+    if `SUM_OUTPUT' == 1 {
+        do "$dchb_climate_code/02_analysis/00_summary/01_summarystats_towns_temp_aggregate.do"
+        do "$dchb_climate_code/02_analysis/00_summary/02_summarystats_towns_temp_share.do"
+        do "$dchb_climate_code/02_analysis/00_summary/03_summarystats_towns_temp_climate.do"
     }
 
     * Regression output
     if `REG_OUTPUT' == 1 {
 
-        do "$dchb_climate_code/02_analysis/00_prep_towns_climate.do"
-        do "$dchb_climate_code/02_analysis/01_reghdfe_towns_temp.do"
-        do "$dchb_climate_code/02_analysis/plot1_reg_pct_wrk_tbar_mean.do"
+        do "$dchb_climate_code/02_analysis/01_reghdfe/01_climate_towns_main.do"
+
+        // do "$dchb_climate_code/02_analysis/plot1_reg_pct_wrk_tbar_mean.do"
 
     }
